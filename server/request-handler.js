@@ -5,32 +5,38 @@
  * node module documentation at http://nodejs.org/api/modules.html. */
 
 messageDatabase = require('./message-database.js');
+url = require("url");
 
 var handleRequest = function(request, response) {
   console.log("Serving request type " + request.method + " for url " + request.url);
-  var statusCode = 200;
   var headers = defaultCorsHeaders;
-
   headers['Content-Type'] = "text/plain";
+  var path = url.parse(request.url).pathname;
+  var query = url.parse(request.url, true).query;
 
-  response.writeHead(statusCode, headers);
-
-  if (request.method === "OPTIONS") {
-    response.end();
-  } else if (request.method === "GET") {
-    data = JSON.stringify({results: messageDatabase.get()});
-    response.end(data);
-  } else if (request.method === "POST") {
-    console.log(request);
-    var message = "";
-    request.addListener('data', function(chunk) {
-      message += chunk;
-    });
-    request.addListener('end', function() {
-      messageDatabase.add(JSON.parse(message));
+  if (path !== '/chatrooms') {
+    response.writeHead(404, headers);
+  } else {
+    response.writeHead(200, headers);
+    if (request.method === "OPTIONS") {
       response.end();
-    });
+    } else if (request.method === "GET") {
+      data = {};
+      if (query.getChats) data.chats = messageDatabase.getChats(query.roomname, query.count);
+      if (query.getRooms) data.rooms = messageDatabase.getRooms();
+      response.end(JSON.stringify(data));
+    } else if (request.method === "POST") {
+      var message = "";
+      request.addListener('data', function(chunk) {
+        message += chunk;
+      });
+      request.addListener('end', function() {
+        messageDatabase.add(JSON.parse(message));
+        response.end();
+      });
+    }
   }
+
 };
 
 var defaultCorsHeaders = {

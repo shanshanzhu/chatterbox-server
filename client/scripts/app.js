@@ -1,16 +1,22 @@
 // Helper functions:
 
-var getData =  function() {
+var getData = function() {
   $.ajax({
     // always use this url
     url: 'http://localhost:8081/chatrooms',
     type: 'GET',
     //contentType: 'application/json',
-    //data: {
-    //  order: "-createdAt"
-    //},
+    data: {
+      room: window.currentRoom,
+      count: window.pageSize,
+      getChats: true,
+      getRooms: true
+    },
     success: function (data) {
-      render(JSON.parse(data).results);
+      data = JSON.parse(data);
+      renderChats(data.chats);
+      // renderRooms(data.rooms);
+      setTimeout(getData, 150);
     },
     error: function (data) {
       console.error('chatterbox: Failed to retrieve messages');
@@ -18,25 +24,15 @@ var getData =  function() {
   });
 };
 
-var render = function (data) {
-  window.rooms = {};
-  _(data).each(function (datum) {
-    if (rooms[datum.roomname] === undefined) {
-      window.rooms[datum.roomname] = [datum];
-    } else {
-      window.rooms[datum.roomname].push(datum);
-    }
-  });
-
-  var currentRoom = rooms[window.currentRoom];
-  if (currentRoom) {
-    $('.chatList').html('');
-    for (var i = 0; i < window.pageSize; i++) {
-      var datum = currentRoom[i];
+var renderChats = function (data) {
+  $('.chatList').html('');
+  if (data.length) {
+    while (data.length) {
+      var msg = data.pop();
       var username = $("<span class='username'></span>");
-      username.text((datum ? datum.username + ": " : ""));
+      username.text((msg ? msg.username + ": " : ""));
       var msgtext = $("<span class='msgtext'></span>");
-      msgtext.text((datum ? datum.text : ""));
+      msgtext.text((msg ? msg.text : ""));
       var newMsg = $("<li class='msg'></li>");
       var UN = username.text().slice(0, username.text().length - 2);
       if (window.friends[UN]) {
@@ -44,36 +40,36 @@ var render = function (data) {
       }
       newMsg.append(username);
       newMsg.append(msgtext);
-      if (!window.blocked[UN]) { $('.chatList').prepend(newMsg); }
+      if (!window.blocked[UN]) { $('.chatList').append(newMsg); }
     }
   } else {
     $('.chatList').html("<i>No messages here yet.</i>");
   }
-
-  $('.currentRoom').text(window.currentRoom);
-  var sortedRooms =  _(window.rooms).sortBy(function (room) {
-    return room.length;
-  }).reverse();
-  $('.roomList').html('');
-  for (var j = 0; j < sortedRooms.length; j++) {
-    var room = $("<li class='room'></li>");
-    var roomName = sortedRooms[j][0].roomname;
-    $(room).attr("name", roomName); // Add the real name as a class.
-    if (roomName && roomName.length > 18) { // Trim the real name for display.
-      roomName = roomName.slice(0,18) + "...";
-    }
-    room.text(roomName);
-    $('.roomList').append(room);
-  }
-
-
-  setTimeout(getData,3000);
 };
+
+
+
+//   $('.currentRoom').text(window.currentRoom);
+//   var sortedRooms =  _(window.rooms).sortBy(function (room) {
+//     return room.length;
+//   }).reverse();
+//   $('.roomList').html('');
+//   for (var j = 0; j < sortedRooms.length; j++) {
+//     var room = $("<li class='room'></li>");
+//     var roomName = sortedRooms[j][0].roomname;
+//     $(room).attr("name", roomName); // Add the real name as a class.
+//     if (roomName && roomName.length > 18) { // Trim the real name for display.
+//       roomName = roomName.slice(0,18) + "...";
+//     }
+//     room.text(roomName);
+//     $('.roomList').append(room);
+//   }
+// };
 
 var sendData = function(data) {
   data = JSON.stringify(data);
   $.ajax({
-    url: 'http://localhost:8081/chatroom',
+    url: 'http://localhost:8081/chatrooms',
     type: 'POST',
     contentType: 'application/json',
     data: data,
@@ -166,5 +162,5 @@ $(document).on("ready", function() {
 
 
   // Page initialization.
-  getData();
+  getData(0);
 });
