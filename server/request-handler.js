@@ -4,6 +4,8 @@
  * from this file and include it in basic-server.js. Check out the
  * node module documentation at http://nodejs.org/api/modules.html. */
 
+messageDatabase = require('./message-database.js');
+
 var handleRequest = function(request, response) {
   console.log("Serving request type " + request.method + " for url " + request.url);
   var statusCode = 200;
@@ -13,20 +15,22 @@ var handleRequest = function(request, response) {
 
   response.writeHead(statusCode, headers);
 
-
-   if (request.method === "OPTIONS") {
+  if (request.method === "OPTIONS") {
     response.end();
-   }
-
-   var path = request.url;
-
-   if (path === "/chatrooms") {
-    data = JSON.stringify({results: messages});
-   } else {
-    data = JSON.stringify(["Go away."]);
-   }
-
-  response.end(data);
+  } else if (request.method === "GET") {
+    data = JSON.stringify({results: messageDatabase.get()});
+    response.end(data);
+  } else if (request.method === "POST") {
+    console.log(request);
+    var message = "";
+    request.addListener('data', function(chunk) {
+      message += chunk;
+    });
+    request.addListener('end', function() {
+      messageDatabase.add(JSON.parse(message));
+      response.end();
+    });
+  }
 };
 
 var defaultCorsHeaders = {
@@ -37,4 +41,3 @@ var defaultCorsHeaders = {
 };
 
 exports.handleRequest = handleRequest;
-var messages = [{username: "The Boss", text: "Get to work.", roomname: "lobby"}];

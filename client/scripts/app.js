@@ -10,7 +10,6 @@ var getData =  function() {
     //  order: "-createdAt"
     //},
     success: function (data) {
-      console.log(data);
       render(JSON.parse(data).results);
     },
     error: function (data) {
@@ -20,7 +19,6 @@ var getData =  function() {
 };
 
 var render = function (data) {
-  console.log(data);
   window.rooms = {};
   _(data).each(function (datum) {
     if (rooms[datum.roomname] === undefined) {
@@ -75,7 +73,7 @@ var render = function (data) {
 var sendData = function(data) {
   data = JSON.stringify(data);
   $.ajax({
-    url: 'localhost:8080/chatroom',
+    url: 'http://localhost:8081/chatroom',
     type: 'POST',
     contentType: 'application/json',
     data: data,
